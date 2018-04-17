@@ -39,7 +39,7 @@ type SjaakType = Sjaak['type']
 
 type ValidationErrors = ValidationError[];
 type JsonPath = string[];
-function stringifyJsonPath(path: JsonPath): string {
+export function stringifyJsonPath(path: JsonPath): string {
   return path.map(segment => {
     if (segment.indexOf('/') >= 0) {
       return `"${segment.replace('"', '\\"')}"`
@@ -48,25 +48,16 @@ function stringifyJsonPath(path: JsonPath): string {
     }
   }).join("/")
 }
-class ValidationError extends Error {
-  path: JsonPath
-  constructor(path: JsonPath, message: string) {
-    super(`${stringifyJsonPath(path)}: ${message}`);
-    this.path = path
-  }
+
+type ValidationError = {
+  jsonPath: JsonPath,
+  message: string,
 }
-class ReferenceNotFoundError extends ValidationError {
-  reference: string;
-  constructor(path: JsonPath, reference: string) {
-    super(path, `Reference '${reference}' not found`)
-    this.reference = reference
-  }
-}
-class InvalidReferenceError extends ValidationError {
-  reference: string;
-  constructor(path: JsonPath, reference: string) {
-    super(path, `Invalid format for reference '${reference}'`)
-    this.reference = reference
+
+function validationError(jsonPath: JsonPath, message: string): ValidationError {
+  return {
+    jsonPath,
+    message
   }
 }
 
@@ -105,10 +96,10 @@ export function validateDocument(document: any, context: Context = {
   if (traverse(document, context)) { return [] }
   return [
     ...validateIf(document.swagger === '2.0',
-      () => [new ValidationError(context.jsonPath, `No 'swagger' defined in document`)]
+      () => [validationError(context.jsonPath, `No 'swagger' defined in document`)]
     ),
     ...validateIf(document.definitions,
-      () => [new ValidationError(context.jsonPath, `No 'definitions' defined in document`)],
+      () => [validationError(context.jsonPath, `No 'definitions' defined in document`)],
       (definitions) => Object.entries(definitions)
         .flatMap(([key, value]) => validateJsonSchema(value, {
           ...context,
@@ -117,7 +108,7 @@ export function validateDocument(document: any, context: Context = {
         }))
     ),
     ...validateIf(document.paths,
-      () => [new ValidationError(context.jsonPath, `No 'paths' defined in document`)],
+      () => [validationError(context.jsonPath, `No 'paths' defined in document`)],
       (paths) => Object.entries(paths)
         .flatMap(([key, value]) => validatePath(key, value, {
           ...context,
@@ -159,7 +150,7 @@ export function validatePath(path: string, content: any, context: Context): Vali
           .length === 0
       ))
       .flatMap(([methodName, method]) => [
-        new ValidationError([...context.jsonPath, methodName, 'parameters'], `Path references to parameter '${parameterInPath}', but it is not defined as a parameter in '${methodName}' method.`)
+        validationError([...context.jsonPath, methodName, 'parameters'], `Path references to parameter '${parameterInPath}', but it is not defined as a parameter in '${methodName}' method.`)
       ])
     )
 
@@ -168,7 +159,7 @@ export function validatePath(path: string, content: any, context: Context): Vali
     .flatMap(([key, value]) => {
       return [
         ...validateIf(unique(pathParameterReferences).length === pathParameterReferences.length,
-          () => [new ValidationError(context.jsonPath, `Duplicate path parameters (${JSON.stringify(pathParameterReferences)})`)]
+          () => [validationError(context.jsonPath, `Duplicate path parameters (${JSON.stringify(pathParameterReferences)})`)]
         ),
         ...validateMethod(value, traverseContext(key, content, context)),
         ...pathParameterReferenceErrors
@@ -208,7 +199,7 @@ function validateResponse(response, context: Context): ValidationErrors {
 
   return flatten(filterNonNull([
     validateIf(response.description,
-      () => [new ValidationError([...context.jsonPath, 'description'], `No 'description' field was defined for response`)],
+      () => [validationError([...context.jsonPath, 'description'], `No 'description' field was defined for response`)],
       (_) => []
     ),
     validateIf(response.schema,
@@ -237,7 +228,7 @@ function validateJsonSchema(value: any, context: Context): ValidationErrors {
     const jsonPath = parseRef(value.$ref, context)
     const definition = lookupJsonPath(context.document.content, jsonPath)
     if (!definition) {
-      return [new ReferenceNotFoundError(context.jsonPath, value.$ref)]
+      return [validationError(context.jsonPath, `Reference '${value.$ref}' not found`)]
     }
     
     return validateJsonSchema(definition, {

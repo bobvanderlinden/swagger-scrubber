@@ -3,7 +3,8 @@ import { expect } from 'chai'
 import {
   validateDocument,
   validatePath,
-  getPathParameters
+  getPathParameters,
+  stringifyJsonPath
 } from '../src/validation'
 
 const minimalDocument = {
@@ -18,7 +19,7 @@ const minimalDocument = {
 }
 
 function validationMessages(document) {
-  return validateDocument(document).map(error => error.message)
+  return validateDocument(document).map(error => `${stringifyJsonPath(error.jsonPath)}: ${error.message}`)
 }
 
 describe('validateDocument', () => {

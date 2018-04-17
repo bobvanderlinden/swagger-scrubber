@@ -17,11 +17,11 @@ export function scrub(swagger) {
 
 export function scrubErrors(swagger, validationErrors) {
   return validationErrors.reduce((swagger, validationError) => {
-    switch (validationError.path[0]) {
+    switch (validationError.jsonPath[0]) {
       case 'paths':
-        return deleteJsonPath(swagger, validationError.path.slice(0, 3))
+        return deleteJsonPath(swagger, validationError.jsonPath.slice(0, 3))
       case 'definitions':
-        return deleteJsonPath(swagger, validationError.path.slice(0, 2))
+        return deleteJsonPath(swagger, validationError.jsonPath.slice(0, 2))
       default:
         return swagger
     }
