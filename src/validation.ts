@@ -29,14 +29,6 @@ type Result<T> = {
   validationErrors: ValidationErrors
 }
 
-type Sjaak = {
-  type: 'koek'
-} | {
-  type: 'ei'
-}
-
-type SjaakType = Sjaak['type']
-
 type ValidationErrors = ValidationError[];
 type JsonPath = string[];
 export function stringifyJsonPath(path: JsonPath): string {
