@@ -1,9 +1,6 @@
 export function filterNonNull<T>(list: (T | null | undefined)[]): T[] {
   return list.filter(item => item !== null && item !== undefined)
 }
-export function flatten<T>(list: T[][]): T[] {
-  return list.flatMap(item => item)
-}
 Array.prototype.flatMap = function(lambda) { 
   return Array.prototype.concat.apply([], this.map(lambda)); 
 };

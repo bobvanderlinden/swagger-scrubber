@@ -1,7 +1,6 @@
 import {
   unique,
   filterNonNull,
-  flatten,
   toObject,
   deleteJsonPath,
   lookupJsonPath
@@ -191,33 +190,32 @@ function validateMethod(method, context: Context): ValidationErrors {
   if (traverse(method, context)) { return [] }
   const bodyParameters = (method.parameters || [])
     .filter(parameter => parameter.in === 'body')
-  return flatten([
-    validate(bodyParameters.length < 2,
+  return [
+    ...validate(bodyParameters.length < 2,
       () => validationError('duplicate-body-parameter', [...context.jsonPath, 'parameters'], 'Duplicate body parameter in method')
     ),
-    Object.entries(method.responses)
+    ...Object.entries(method.responses)
       .flatMap(([key, value]) => validateResponse(value, {
         ...context,
         jsonPath: [...context.jsonPath, 'responses', key],
         parentObjects: [...context.parentObjects, method, method.responses]
-      })),
-    
-  ])
+      }))
+  ]
 }
 
 function validateResponse(response, context: Context): ValidationErrors {
   if (traverse(response, context)) { return [] }
 
-  return flatten(filterNonNull([
-    validateIf(response.description,
+  return [
+    ...validateIf(response.description,
       () => [validationError('missing-path-description', [...context.jsonPath, 'description'], `No 'description' field was defined for response`)],
       (_) => []
     ),
-    validateIf(response.schema,
+    ...validateIf(response.schema,
       () => [],
       (schema) => validateJsonSchema(response.schema, traverseContext('schema', response, context))
     )
-  ]))
+  ]
 }
 
 function validateJsonSchema(value: any, context: Context): ValidationErrors {
