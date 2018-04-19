@@ -40,3 +40,13 @@ export function deleteJsonPath(obj, attributes: string[]): any {
 export function lookupJsonPath(obj: any, path: string[]): any {
   return path.reduce((definition, name) => definition && definition[name], obj)
 }
+
+export function sort<T>(array: T[]): T[] {
+  const result = [...array]
+  result.sort()
+  return result
+}
+
+export function equals<T>(a: T, b: T): boolean {
+  return JSON.stringify(a) === JSON.stringify(b)
+}
