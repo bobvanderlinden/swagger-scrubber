@@ -49,6 +49,7 @@ type SpecificValidationError
 | { type: 'missing-definitions' }
 | { type: 'missing-path-description' }
 | { type: 'reference-not-found' }
+| { type: 'duplicate-body-parameter' }
 
 type ValidationError = {
   type: SpecificValidationError['type'],
@@ -174,7 +175,12 @@ export function validatePath(path: string, content: { [key: string]: any }, cont
 
 function validateMethod(method, context: Context): ValidationErrors {
   if (traverse(method, context)) { return [] }
+  const bodyParameters = (method.parameters || [])
+    .filter(parameter => parameter.in === 'body')
   return flatten([
+    validate(bodyParameters.length < 2,
+      () => validationError('duplicate-body-parameter', [...context.jsonPath, 'parameters'], 'Duplicate body parameter in method')
+    ),
     Object.entries(method.responses)
       .flatMap(([key, value]) => validateResponse(value, {
         ...context,

@@ -106,10 +106,57 @@ describe('validateDocument', () => {
       type: 'path-parameter-not-defined'
     }])
   })
-})
-
-describe('validatePath', () => {
-
+  it('should not return error for duplicate-body-parameter when a single body parameter is defined', () => {
+    const errorMessages = validationMessages({
+      ...minimalDocument,
+      paths: {
+        '/path': {
+          'post': {
+            parameters: [{
+              in: 'body',
+              schema: { type: 'string' }
+            }],
+            responses: {
+              '200': {
+                description: '',
+                schema: { type: 'string' }
+              }
+            }
+          }
+        }
+      }
+    })
+    expect(errorMessages).to.deep.equal([])
+  })
+  it('should return error for duplicate-body-parameter', () => {
+    const errorMessages = validationMessages({
+      ...minimalDocument,
+      paths: {
+        '/path': {
+          'post': {
+            parameters: [{
+              in: 'body',
+              schema: { type: 'string' }
+            }, {
+              in: 'body',
+              schema: { type: 'string' }
+            }],
+            responses: {
+              '200': {
+                description: '',
+                schema: { type: 'string' }
+              }
+            }
+          }
+        }
+      }
+    })
+    expect(errorMessages).to.deep.include.members([{
+      jsonPath: ['paths','/path','post','parameters'],
+      message: 'Duplicate body parameter in method',
+      type: 'duplicate-body-parameter'
+    }])
+  })
 })
 
 describe('getPathParameters', () => {
