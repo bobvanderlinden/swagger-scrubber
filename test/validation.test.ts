@@ -8,7 +8,7 @@ import {
 } from '../src/validation'
 
 const minimalDocument = {
-  openapi: '3.0.0',
+  swagger: '2.0',
   info: {
     title: 'minimal',
     version: '1.0'
@@ -19,16 +19,41 @@ const minimalDocument = {
 }
 
 function validationMessages(document) {
-  return validateDocument(document).map(error => `${stringifyJsonPath(error.jsonPath)}: ${error.message}`)
+  return validateDocument(document)
 }
 
 describe('validateDocument', () => {
   it('should validate absent swagger version', () => {
-    expect(validationMessages({})).to.include(
-      ": No 'swagger' defined in document",
-      ": No 'definitions' defined in document",
-      ": No 'paths' defined in document"
-    )
+    expect(validationMessages({
+      ...minimalDocument,
+      swagger: undefined
+    })).to.deep.include.members([{
+      type:'missing-swagger',
+      jsonPath: [],
+      message: "No 'swagger' defined in document"
+    }])
+  })
+
+  it('should validate absent paths', () => {
+    expect(validationMessages({
+      ...minimalDocument,
+      paths: undefined
+    })).to.deep.include.members([{
+      type:'missing-paths',
+      jsonPath: [],
+      message: "No 'paths' defined in document"
+    }])
+  })
+
+  it('should validate absent paths', () => {
+    expect(validationMessages({
+      ...minimalDocument,
+      definitions: undefined
+    })).to.deep.include.members([{
+      type:'missing-definitions',
+      jsonPath: [],
+      message: "No 'definitions' defined in document"
+    }])
   })
 
   it('should validate reference to absent definition', () => {
@@ -48,9 +73,15 @@ describe('validateDocument', () => {
         }
       }
     })
-    expect(errorMessages).to.include.members([
-      `paths/"/"/get/responses/200/schema: Reference '#/definitions/does_not_exist' not found`
-    ])
+    expect(errorMessages).to.deep.include.members([{
+      type: 'missing-path-description',
+      message: "No 'description' field was defined for response",
+      jsonPath: ['paths', '/', 'get', 'responses', '200', 'description']
+    }, {
+      type: 'reference-not-found',
+      message: "Reference '#/definitions/does_not_exist' not found",
+      jsonPath: ['paths','/','get','responses','200','schema']
+    }])
   })
   it('should validate path parameters', () => {
     const errorMessages = validationMessages({
@@ -69,9 +100,11 @@ describe('validateDocument', () => {
         }
       }
     })
-    expect(errorMessages).to.include.members([
-      `paths/"/path/with/{parameter}"/get/parameters: Path references to parameter 'parameter', but it is not defined as a parameter in 'get' method.`
-    ])
+    expect(errorMessages).to.deep.include.members([{
+      jsonPath: ['paths','/path/with/{parameter}','get','parameters'],
+      message: "Path references to parameter 'parameter', but it is not defined as a parameter in 'get' method.",
+      type: 'path-parameter-not-defined'
+    }])
   })
 })
 

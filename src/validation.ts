@@ -42,12 +42,14 @@ export function stringifyJsonPath(path: JsonPath): string {
 }
 
 type ValidationError = {
+  type: string,
   jsonPath: JsonPath,
   message: string,
 }
 
-function validationError(jsonPath: JsonPath, message: string): ValidationError {
+function validationError(type: string, jsonPath: JsonPath, message: string): ValidationError {
   return {
+    type,
     jsonPath,
     message
   }
@@ -88,10 +90,10 @@ export function validateDocument(document: any, context: Context = {
   if (traverse(document, context)) { return [] }
   return [
     ...validateIf(document.swagger === '2.0',
-      () => [validationError(context.jsonPath, `No 'swagger' defined in document`)]
+      () => [validationError('missing-swagger', context.jsonPath, `No 'swagger' defined in document`)]
     ),
     ...validateIf(document.definitions,
-      () => [validationError(context.jsonPath, `No 'definitions' defined in document`)],
+      () => [validationError('missing-definitions', context.jsonPath, `No 'definitions' defined in document`)],
       (definitions) => Object.entries(definitions)
         .flatMap(([key, value]) => validateJsonSchema(value, {
           ...context,
@@ -100,7 +102,7 @@ export function validateDocument(document: any, context: Context = {
         }))
     ),
     ...validateIf(document.paths,
-      () => [validationError(context.jsonPath, `No 'paths' defined in document`)],
+      () => [validationError('missing-paths', context.jsonPath, `No 'paths' defined in document`)],
       (paths) => Object.entries(paths)
         .flatMap(([key, value]) => validatePath(key, value, {
           ...context,
@@ -142,7 +144,7 @@ export function validatePath(path: string, content: any, context: Context): Vali
           .length === 0
       ))
       .flatMap(([methodName, method]) => [
-        validationError([...context.jsonPath, methodName, 'parameters'], `Path references to parameter '${parameterInPath}', but it is not defined as a parameter in '${methodName}' method.`)
+        validationError('path-parameter-not-defined', [...context.jsonPath, methodName, 'parameters'], `Path references to parameter '${parameterInPath}', but it is not defined as a parameter in '${methodName}' method.`)
       ])
     )
 
@@ -151,7 +153,7 @@ export function validatePath(path: string, content: any, context: Context): Vali
     .flatMap(([key, value]) => {
       return [
         ...validateIf(unique(pathParameterReferences).length === pathParameterReferences.length,
-          () => [validationError(context.jsonPath, `Duplicate path parameters (${JSON.stringify(pathParameterReferences)})`)]
+          () => [validationError('duplicate-path-parameter', context.jsonPath, `Duplicate path parameters (${JSON.stringify(pathParameterReferences)})`)]
         ),
         ...validateMethod(value, traverseContext(key, content, context)),
         ...pathParameterReferenceErrors
@@ -191,7 +193,7 @@ function validateResponse(response, context: Context): ValidationErrors {
 
   return flatten(filterNonNull([
     validateIf(response.description,
-      () => [validationError([...context.jsonPath, 'description'], `No 'description' field was defined for response`)],
+      () => [validationError('missing-path-description', [...context.jsonPath, 'description'], `No 'description' field was defined for response`)],
       (_) => []
     ),
     validateIf(response.schema,
@@ -220,7 +222,7 @@ function validateJsonSchema(value: any, context: Context): ValidationErrors {
     const jsonPath = parseRef(value.$ref, context)
     const definition = lookupJsonPath(context.document.content, jsonPath)
     if (!definition) {
-      return [validationError(context.jsonPath, `Reference '${value.$ref}' not found`)]
+      return [validationError('reference-not-found', context.jsonPath, `Reference '${value.$ref}' not found`)]
     }
     
     return validateJsonSchema(definition, {
