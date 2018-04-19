@@ -131,7 +131,7 @@ function validate(condition, validationErrorFactory: () => ValidationError): Val
   }
 }
 
-export function validatePath(path: string, content: any, context: Context): ValidationErrors {
+export function validatePath(path: string, content: { [key: string]: any }, context: Context): ValidationErrors {
   if (traverse(content, context)) { return [] }
   const pathParameterReferences = getPathParameters(path)
 
