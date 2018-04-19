@@ -90,6 +90,38 @@ function traverse(obj: any, context: Context): boolean {
   }
 }
 
+function validateIf<T>(
+  value: T | null | undefined | boolean,
+  onAbsent: () => ValidationErrors,
+  onSuccess: (value: T) => ValidationErrors = (_) => []
+): ValidationErrors {
+  if (value === null || value === undefined || value === false) {
+    return onAbsent()
+  } else if (value === true) {
+    return []
+  } else {
+    return onSuccess(value)
+  }
+}
+
+export function getPathParameters(path: string): string[] {
+  const variableRegex = /\{(\w+)\}/g;
+  let match;
+  const result = []
+  while (match = variableRegex.exec(path)) {
+    result.push(match[1])
+  }
+  return result
+}
+
+function validate(condition, validationErrorFactory: () => ValidationError): ValidationErrors {
+  if (condition) {
+    return []
+  } else {
+    return [validationErrorFactory()]
+  }
+}
+
 export function validateDocument(document: any, context: Context = {
   parentObjects: [],
   jsonPath: [],
@@ -123,24 +155,6 @@ export function validateDocument(document: any, context: Context = {
         }))
     )
   ]
-}
-
-export function getPathParameters(path: string): string[] {
-  const variableRegex = /\{(\w+)\}/g;
-  let match;
-  const result = []
-  while (match = variableRegex.exec(path)) {
-    result.push(match[1])
-  }
-  return result
-}
-
-function validate(condition, validationErrorFactory: () => ValidationError): ValidationErrors {
-  if (condition) {
-    return []
-  } else {
-    return [validationErrorFactory()]
-  }
 }
 
 export function validatePath(path: string, content: { [key: string]: any }, context: Context): ValidationErrors {
@@ -189,20 +203,6 @@ function validateMethod(method, context: Context): ValidationErrors {
       })),
     
   ])
-}
-
-function validateIf<T>(
-  value: T | null | undefined | boolean,
-  onAbsent: () => ValidationErrors,
-  onSuccess: (value: T) => ValidationErrors = (_) => []
-): ValidationErrors {
-  if (value === null || value === undefined || value === false) {
-    return onAbsent()
-  } else if (value === true) {
-    return []
-  } else {
-    return onSuccess(value)
-  }
 }
 
 function validateResponse(response, context: Context): ValidationErrors {
