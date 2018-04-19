@@ -41,13 +41,24 @@ export function stringifyJsonPath(path: JsonPath): string {
   }).join("/")
 }
 
+type SpecificValidationError
+= { type: 'missing-swagger' }
+| { type: 'missing-paths' }
+| { type: 'path-parameter-not-defined' }
+| { type: 'duplicate-path-parameter' }
+| { type: 'missing-definitions' }
+| { type: 'missing-path-description' }
+| { type: 'reference-not-found' }
+
 type ValidationError = {
-  type: string,
+  type: SpecificValidationError['type'],
   jsonPath: JsonPath,
   message: string,
 }
 
-function validationError(type: string, jsonPath: JsonPath, message: string): ValidationError {
+type ValidationErrorType = ValidationError['type']
+
+function validationError(type: ValidationErrorType, jsonPath: JsonPath, message: string): ValidationError {
   return {
     type,
     jsonPath,
