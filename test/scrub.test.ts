@@ -33,8 +33,8 @@ describe('scrub', () => {
     const document = {
       swagger: '2.0',
       paths: {
-        ...validPath,
-        ...invalidPath
+        ...invalidPath,
+        ...validPath
       }
     }
     const errors = validateDocument(document)
@@ -62,12 +62,12 @@ describe('scrub', () => {
       swagger: '2.0',
       paths: {},
       definitions: {
-        ...validDefinition,
-        ...invalidDefinition
+        ...invalidDefinition,
+        ...validDefinition
       }
     }
     const errors = validateDocument(document)
-    const scrubbedDocument = scrub(document, errors)
+    const scrubbedDocument = scrub(document)
     expect(scrubbedDocument).to.deep.equal({
       swagger: '2.0',
       paths: {},

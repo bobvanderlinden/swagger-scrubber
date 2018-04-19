@@ -128,6 +128,35 @@ describe('validateDocument', () => {
     })
     expect(errorMessages).to.deep.equal([])
   })
+
+  it('should validate unordered definitions', () => {
+    expect(validationMessages({
+      ...minimalDocument,
+      definitions: {
+        b: {},
+        a: {}
+      }
+    })).to.deep.include.members([{
+      type: 'definitions-alphabetical',
+      jsonPath: ['definitions'],
+      message: "Definitions are not alphabetical"
+    }])
+  })
+
+  it('should validate unordered paths', () => {
+    expect(validationMessages({
+      ...minimalDocument,
+      paths: {
+        b: {},
+        a: {}
+      }
+    })).to.deep.include.members([{
+      type: 'paths-alphabetical',
+      jsonPath: ['paths'],
+      message: "Paths are not alphabetical"
+    }])
+  })
+
   it('should return error for duplicate-body-parameter', () => {
     const errorMessages = validationMessages({
       ...minimalDocument,

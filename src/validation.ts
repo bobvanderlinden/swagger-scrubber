@@ -3,7 +3,9 @@ import {
   filterNonNull,
   toObject,
   deleteJsonPath,
-  lookupJsonPath
+  lookupJsonPath,
+  sort,
+  equals
 } from './utils'
 
 function parseRef(ref, context: Context): JsonPath {
@@ -49,6 +51,8 @@ type SpecificValidationError
 | { type: 'missing-path-description' }
 | { type: 'reference-not-found' }
 | { type: 'duplicate-body-parameter' }
+| { type: 'paths-alphabetical' }
+| { type: 'definitions-alphabetical' }
 
 type ValidationError = {
   type: SpecificValidationError['type'],
@@ -137,21 +141,37 @@ export function validateDocument(document: any, context: Context = {
     ),
     ...validateIf(document.definitions,
       () => [validationError('missing-definitions', context.jsonPath, `No 'definitions' defined in document`)],
-      (definitions) => Object.entries(definitions)
-        .flatMap(([key, value]) => validateJsonSchema(value, {
-          ...context,
-          jsonPath: [...context.jsonPath, 'definitions', key],
-          parentObjects: [...context.parentObjects, document]
-        }))
+      (definitions) => {
+        const definitionNames = Object.entries(definitions).map(([key, value]) => key)
+        return [
+          ...validate(equals(definitionNames, sort(definitionNames)),
+            () => validationError('definitions-alphabetical', [...context.jsonPath, 'definitions'], 'Definitions are not alphabetical')
+          ),
+          ...Object.entries(definitions)
+            .flatMap(([key, value]) => validateJsonSchema(value, {
+              ...context,
+              jsonPath: [...context.jsonPath, 'definitions', key],
+              parentObjects: [...context.parentObjects, document]
+            }))
+        ]
+      }
     ),
     ...validateIf(document.paths,
       () => [validationError('missing-paths', context.jsonPath, `No 'paths' defined in document`)],
-      (paths) => Object.entries(paths)
-        .flatMap(([key, value]) => validatePath(key, value, {
-          ...context,
-          jsonPath: [...context.jsonPath, 'paths', key],
-          parentObjects: [...context.parentObjects, document]
-        }))
+      (paths) => {
+        const pathKeys = Object.keys(paths)
+        return [
+          ...validate(equals(pathKeys, sort(pathKeys)),
+            () => validationError('paths-alphabetical', [...context.jsonPath, 'paths'], 'Paths are not alphabetical')
+          ),
+          ...Object.entries(paths)
+            .flatMap(([key, value]) => validatePath(key, value, {
+              ...context,
+              jsonPath: [...context.jsonPath, 'paths', key],
+              parentObjects: [...context.parentObjects, document]
+            }))
+          ]
+        }
     )
   ]
 }
