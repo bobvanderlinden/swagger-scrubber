@@ -23,6 +23,10 @@ function validationMessages(document) {
 }
 
 describe('validateDocument', () => {
+  it('should pass validation', () => {
+    expect(validationMessages(minimalDocument)).to.deep.equal([])
+  })
+
   it('should validate absent swagger version', () => {
     expect(validationMessages({
       ...minimalDocument,
