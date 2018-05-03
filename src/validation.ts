@@ -93,20 +93,6 @@ function traverse(obj: any, context: Context): boolean {
   }
 }
 
-function validateIf<T>(
-  value: T | null | undefined | boolean,
-  onAbsent: () => ValidationErrors,
-  onSuccess: (value: T) => ValidationErrors = (_) => []
-): ValidationErrors {
-  if (value === null || value === undefined || value === false) {
-    return onAbsent()
-  } else if (value === true) {
-    return []
-  } else {
-    return onSuccess(value)
-  }
-}
-
 export function getPathParameters(path: string): string[] {
   const variableRegex = /\{(\w+)\}/g;
   let match;
@@ -117,12 +103,32 @@ export function getPathParameters(path: string): string[] {
   return result
 }
 
-function validate(condition, validationErrorFactory: () => ValidationError): ValidationErrors {
+function ifThenElse<T>(condition: boolean, then: () => T, otherwise: () => T): T {
   if (condition) {
-    return []
+    return then()
   } else {
-    return [validationErrorFactory()]
+    return otherwise()
   }
+}
+
+function ifNotThenElse<T>(condition: boolean, then: () => T, otherwise: () => T): T {
+  return ifThenElse(!condition, then, otherwise)
+}
+
+function ifNotThen(condition: boolean, then: () => ValidationErrors): ValidationErrors {
+  return ifNotThenElse(condition, then, () => [])
+}
+
+function branch<T, TResult>(value: T | null | undefined, then: (value: T) => TResult, otherwise: () => TResult): TResult {
+  if (value === null || value === undefined) {
+    return otherwise()
+  } else {
+    return then(value)
+  }
+}
+
+function branchNot<T, TResult>(value: T | null | undefined, otherwise: () => TResult, then: (value: T) => TResult): TResult {
+  return branch(value, then, otherwise)
 }
 
 export function validateDocument(document: any, context: Context = {
@@ -136,16 +142,17 @@ export function validateDocument(document: any, context: Context = {
 }): ValidationErrors {
   if (traverse(document, context)) { return [] }
   return [
-    ...validateIf(document.swagger === '2.0',
-      () => [validationError('missing-swagger', context.jsonPath, `No 'swagger' defined in document`)]
+    ...ifNotThenElse(document.swagger === '2.0',
+      () => [validationError('missing-swagger', context.jsonPath, `No 'swagger' defined in document`)],
+      () => []
     ),
-    ...validateIf(document.definitions,
+    ...branchNot(document.definitions,
       () => [validationError('missing-definitions', context.jsonPath, `No 'definitions' defined in document`)],
       (definitions) => {
         const definitionNames = Object.entries(definitions).map(([key, value]) => key)
         return [
-          ...validate(equals(definitionNames, sort(definitionNames)),
-            () => validationError('definitions-alphabetical', [...context.jsonPath, 'definitions'], 'Definitions are not alphabetical')
+          ...ifNotThen(equals(definitionNames, sort(definitionNames)),
+            () => [validationError('definitions-alphabetical', [...context.jsonPath, 'definitions'], 'Definitions are not alphabetical')]
           ),
           ...Object.entries(definitions)
             .flatMap(([key, value]) => validateJsonSchema(value, {
@@ -156,13 +163,13 @@ export function validateDocument(document: any, context: Context = {
         ]
       }
     ),
-    ...validateIf(document.paths,
+    ...branchNot(document.paths,
       () => [validationError('missing-paths', context.jsonPath, `No 'paths' defined in document`)],
       (paths) => {
         const pathKeys = Object.keys(paths)
         return [
-          ...validate(equals(pathKeys, sort(pathKeys)),
-            () => validationError('paths-alphabetical', [...context.jsonPath, 'paths'], 'Paths are not alphabetical')
+          ...ifNotThen(equals(pathKeys, sort(pathKeys)),
+            () => [validationError('paths-alphabetical', [...context.jsonPath, 'paths'], 'Paths are not alphabetical')]
           ),
           ...Object.entries(paths)
             .flatMap(([key, value]) => validatePath(key, value, {
@@ -197,8 +204,9 @@ export function validatePath(path: string, content: { [key: string]: any }, cont
   return Object.entries(content)
     .flatMap(([key, value]) => {
       return [
-        ...validateIf(unique(pathParameterReferences).length === pathParameterReferences.length,
-          () => [validationError('duplicate-path-parameter', context.jsonPath, `Duplicate path parameters (${JSON.stringify(pathParameterReferences)})`)]
+        ...ifNotThenElse(unique(pathParameterReferences).length === pathParameterReferences.length,
+          () => [validationError('duplicate-path-parameter', context.jsonPath, `Duplicate path parameters (${JSON.stringify(pathParameterReferences)})`)],
+          () => []
         ),
         ...validateMethod(value, traverseContext(key, content, context)),
         ...pathParameterReferenceErrors
@@ -211,8 +219,8 @@ function validateMethod(method, context: Context): ValidationErrors {
   const bodyParameters = (method.parameters || [])
     .filter(parameter => parameter.in === 'body')
   return [
-    ...validate(bodyParameters.length < 2,
-      () => validationError('duplicate-body-parameter', [...context.jsonPath, 'parameters'], 'Duplicate body parameter in method')
+    ...ifNotThen(bodyParameters.length < 2,
+      () => [validationError('duplicate-body-parameter', [...context.jsonPath, 'parameters'], 'Duplicate body parameter in method')]
     ),
     ...Object.entries(method.responses)
       .flatMap(([key, value]) => validateResponse(value, {
@@ -227,11 +235,11 @@ function validateResponse(response, context: Context): ValidationErrors {
   if (traverse(response, context)) { return [] }
 
   return [
-    ...validateIf(response.description,
+    ...branchNot(response.description,
       () => [validationError('missing-path-description', [...context.jsonPath, 'description'], `No 'description' field was defined for response`)],
       (_) => []
     ),
-    ...validateIf(response.schema,
+    ...branchNot(response.schema,
       () => [],
       (schema) => validateJsonSchema(response.schema, traverseContext('schema', response, context))
     )
