@@ -10,11 +10,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "symbol": "^0.3.1"
+    "api-spec-converter": "^2.7.2",
+    "symbol": "^0.3.1",
+    "yargs": "^11.0.0"
   },
   "devDependencies": {
     "@types/mocha": "^5.0.0",
     "@types/node": "^9.6.4",
+    "@types/yargs": "^11.0.0",
     "chai": "^4.1.2",
     "mocha": "^5.1.0",
     "source-map-support": "^0.5.4",
