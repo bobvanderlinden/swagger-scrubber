@@ -24,5 +24,11 @@ yargs
       process.stdout.write(JSON.stringify(result.spec, null, '  '))
     })
   })
+  .command({
+    command: '*',
+    handler() {
+      yargs.showHelp()
+    }
+  })
   .help()
   .argv
