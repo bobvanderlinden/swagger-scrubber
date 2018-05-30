@@ -30,7 +30,7 @@ export async function scrub(source: any, validationErrors) {
       paths.concat(definitions)
         .map(path => JSON.stringify(path))
     )
-    .map(path => JSON.parse(path))
+    .map(path => JSON.parse(path as any))
     .reduce((json, path) => deleteJsonPath(json, path), source)
   
   return {
