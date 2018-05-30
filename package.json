@@ -2,13 +2,12 @@
   "name": "swagger-scrubber",
   "version": "1.0.0",
   "description": "A OpenAPI validator and cleaner",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "start": "ts-node src/index.ts",
-    "build": "tsc",
+    "postinstall": "tsc",
     "test": "mocha --require ts-node/register  --watch-extensions ts,tsx \"test/*.{ts,tsx}\""
   },
-  "bin": "./dist/src/index.js",
   "author": "",
   "license": "ISC",
   "dependencies": {
