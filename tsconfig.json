@@ -3,6 +3,7 @@
     "module": "commonjs",
     "target": "es2017",
     "jsx": "preserve",
+    "outDir": "./dist",    
     "moduleResolution": "node",
     "types": [
       "node"
