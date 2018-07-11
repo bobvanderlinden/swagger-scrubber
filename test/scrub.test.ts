@@ -1,10 +1,7 @@
 import 'mocha'
 import { expect } from 'chai'
 import {
-  validateDocument
-} from '../src/validation'
-import {
-  scrub
+  scrub, validateAndScrub
 } from '../src/scrub'
 
 function pathWithSchema(path, schema) {
@@ -37,8 +34,7 @@ describe('scrub', () => {
         ...validPath
       }
     }
-    const errors = validateDocument(document)
-    const scrubbedDocument = scrub(document, errors)
+    const scrubbedDocument = validateAndScrub(document, { from: 'swagger_2' })
     expect(scrubbedDocument).to.deep.equal({
       swagger: '2.0',
       paths: {
@@ -66,8 +62,7 @@ describe('scrub', () => {
         ...validDefinition
       }
     }
-    const errors = validateDocument(document)
-    const scrubbedDocument = scrub(document, errors)
+    const scrubbedDocument = scrub(document, { from: 'swagger_2' })
     expect(scrubbedDocument).to.deep.equal({
       swagger: '2.0',
       paths: {},
@@ -93,8 +88,7 @@ describe('scrub', () => {
         ...invalidDefinition
       }
     }
-    const errors = validateDocument(document)
-    const scrubbedDocument = scrub(document, errors)
+    const scrubbedDocument = validateAndScrub(document, { from: 'swagger_2' })
     expect(scrubbedDocument).to.deep.equal({
       swagger: '2.0',
       paths: {
