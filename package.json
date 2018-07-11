@@ -1,6 +1,6 @@
 {
   "name": "swagger-scrubber",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A OpenAPI validator and cleaner",
   "main": "dist/src/index.js",
   "scripts": {
