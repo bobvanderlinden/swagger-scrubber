@@ -17,9 +17,16 @@ yargs
         choices: ['swagger_1', 'swagger_2', 'openapi_3'],
         required: true
       })
-  }, function ({source, from}) {
+      .option('ignore-rule', {
+        alias: 'i',
+        description: 'ignore a specific validation rule',
+        required: false,
+        type: 'array'
+      })
+  }, function ({ source, from, ignoreRule }) {
     validateAndScrubExhaustive(source, {
-      from: from
+      from: from,
+      ignoreValidationCodes: ignoreRule
     }).then(result => {
       process.stderr.write(JSON.stringify(result.validationErrors, null, '  '))
       process.stdout.write(JSON.stringify(result.spec, null, '  '))

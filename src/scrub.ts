@@ -32,7 +32,7 @@ export async function scrub(source: any, validationErrors) {
     )
     .map(path => JSON.parse(path as any))
     .reduce((json, path) => deleteJsonPath(json, path), source)
-  
+
   return {
     ...scrubbed,
     paths: removeEmptyObjects(
@@ -42,15 +42,27 @@ export async function scrub(source: any, validationErrors) {
   }
 }
 
-export async function validateAndScrub(source, options) {
+export async function convertAndValidate({ from, to = 'swagger_2', source }) {
   const converted = await Converter.convert({
-    from: options.from,
-    to: 'swagger_2',
+    from: from,
+    to: to,
     source
   })
   const result = await converted.validate()
-  const validationErrors = result.errors || []
-  const spec = JSON.parse(converted.stringify())
+  return {
+    errors: result.errors || [],
+    spec: JSON.parse(converted.stringify())
+  }
+}
+
+export async function validateAndScrub(source, { from, ignoreValidationCodes = [] }) {
+  const ignoreValidationCodeLookup = ignoreValidationCodes
+    .reduce((lookup, code) => ({ ...lookup, [code]: true }), {})
+  const { spec: spec, errors: allValidationErrors } = await convertAndValidate({
+    from, source
+  })
+  const validationErrors = allValidationErrors
+    .filter(validationError => !ignoreValidationCodeLookup[validationError.code])
   const scrubbedSpec = await scrub(spec, validationErrors)
   return {
     spec: scrubbedSpec,
