@@ -1,5 +1,7 @@
 # swagger-scrubber
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/bobvanderlinden/swagger-scrubber.svg)](https://greenkeeper.io/)
+
 A command-line tool to remove invalid definitions from a Swagger specification.
 
 ## Installation
