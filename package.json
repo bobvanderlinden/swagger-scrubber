@@ -9,8 +9,16 @@
     "test": "mocha --require ts-node/register  --watch-extensions ts,tsx \"test/*.{ts,tsx}\""
   },
   "bin": "./dist/src/index.js",
-  "author": "",
+  "author": {
+    "name": "Bob van der Linden",
+    "email": "bobvanderlinden@gmail.com",
+    "url": "https://github.com/bobvanderlinden"
+  },
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bobvanderlinden/swagger-scrubber.git"
+  },
   "dependencies": {
     "api-spec-converter": "^2.7.6",
     "symbol": "^0.3.1",
