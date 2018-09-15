@@ -1,8 +1,17 @@
 import 'mocha'
 import { expect } from 'chai'
 import {
-  scrub, validateAndScrub
+  scrub, validateAndScrub, validateAndScrubExhaustive
 } from '../src/scrub'
+
+const validMinimalSpec = {
+  swagger: '2.0',
+  info: {
+    title: 'dummy',
+    version: '1.0'
+  },
+  paths: {}
+}
 
 function pathWithSchema(path, schema) {
   return {
@@ -20,7 +29,7 @@ function pathWithSchema(path, schema) {
 }
 
 describe('scrub', () => {
-  it('should remove invalid paths', () => {
+  it('should remove invalid paths', async () => {
     const validPath = pathWithSchema('/valid', {
       type: 'string'
     })
@@ -28,22 +37,21 @@ describe('scrub', () => {
       $ref: '#/definitions/does_not_exist'
     })
     const document = {
-      swagger: '2.0',
+      ...validMinimalSpec,
       paths: {
         ...invalidPath,
         ...validPath
       }
     }
-    const scrubbedDocument = validateAndScrub(document, { from: 'swagger_2' })
-    expect(scrubbedDocument).to.deep.equal({
-      swagger: '2.0',
+    const scrubbedDocument = await validateAndScrub(document, { from: 'swagger_2' })
+    expect(scrubbedDocument.spec).to.deep.equal({
+      ...validMinimalSpec,
       paths: {
-        ...validPath,
-        '/invalid': {}
+        ...validPath
       }
     })
   })
-  it('should remove invalid definitions', () => {
+  it('should remove invalid definitions', async () => {
     const validDefinition = {
       'valid': {
         type: 'string'
@@ -55,30 +63,28 @@ describe('scrub', () => {
       }
     }
     const document = {
-      swagger: '2.0',
-      paths: {},
+      ...validMinimalSpec,
       definitions: {
         ...invalidDefinition,
         ...validDefinition
       }
     }
-    const scrubbedDocument = scrub(document, { from: 'swagger_2' })
-    expect(scrubbedDocument).to.deep.equal({
-      swagger: '2.0',
-      paths: {},
+    const result = await validateAndScrub(document, { from: 'swagger_2' })
+    expect(result.spec).to.deep.equal({
+      ...validMinimalSpec,
       definitions: {
         ...validDefinition,
       }
     })
   })
-  it('should remove paths that refer to invalid definitions', () => {
+  it('should remove paths that refer to invalid definitions', async () => {
     const invalidDefinition = {
       'invalid': {
         $ref: '#/definition/does_not_exist'
       }
     }
     const document = {
-      swagger: '2.0',
+      ...validMinimalSpec,
       paths: {
         ...pathWithSchema('/toberemoved', {
           $ref: '#/definitions/invalid'
@@ -88,13 +94,10 @@ describe('scrub', () => {
         ...invalidDefinition
       }
     }
-    const scrubbedDocument = validateAndScrub(document, { from: 'swagger_2' })
-    expect(scrubbedDocument).to.deep.equal({
-      swagger: '2.0',
-      paths: {
-        '/toberemoved': {}
-      },
-      definitions: {}
+    const result = await validateAndScrubExhaustive(document, { from: 'swagger_2' })
+    expect(result.spec).to.deep.equal({
+      ...validMinimalSpec,
+      paths: {}
     })
   })
 })
