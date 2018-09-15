@@ -33,12 +33,19 @@ export async function scrub(source: any, validationErrors) {
     .map(path => JSON.parse(path as any))
     .reduce((json, path) => deleteJsonPath(json, path), source)
 
+  const scrubbedDefinitions = scrubbed.definitions && removeEmptyObjects(scrubbed.definitions)
+
+  if (scrubbedDefinitions && Object.keys(scrubbedDefinitions).length > 0) {
+    scrubbed.definitions = scrubbedDefinitions;
+  } else {
+    delete scrubbed['definitions']
+  }
+
   return {
     ...scrubbed,
     paths: removeEmptyObjects(
       mapObject(scrubbed.paths, entries => entries.map(([key, value]) => [key, removeEmptyObjects(value)]))
-    ),
-    definitions: removeEmptyObjects(scrubbed.definitions)
+    )
   }
 }
 

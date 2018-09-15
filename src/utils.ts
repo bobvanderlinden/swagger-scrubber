@@ -1,10 +1,3 @@
-export function filterNonNull<T>(list: (T | null | undefined)[]): T[] {
-  return list.filter(item => item !== null && item !== undefined)
-}
-Array.prototype.flatMap = function(lambda) { 
-  return Array.prototype.concat.apply([], this.map(lambda)); 
-};
-
 export function unique<T>(arr: T[]): T[] {
   return [...new Set(arr)];
 }
@@ -35,16 +28,6 @@ export function deleteJsonPath(obj, attributes: string[]): any {
     ...obj,
     [nextAttribute]: deleteJsonPath(obj[nextAttribute], tail)
   }
-}
-
-export function lookupJsonPath(obj: any, path: string[]): any {
-  return path.reduce((definition, name) => definition && definition[name], obj)
-}
-
-export function sort<T>(array: T[]): T[] {
-  const result = [...array]
-  result.sort()
-  return result
 }
 
 export function equals<T>(a: T, b: T): boolean {
