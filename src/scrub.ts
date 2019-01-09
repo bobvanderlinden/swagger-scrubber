@@ -82,12 +82,12 @@ export async function validateAndScrubExhaustive(spec, options) {
   let iteration = 0
   do {
     const result = await validateAndScrub(spec, options)
+    spec = result.spec
     options = { ...options, from: 'swagger_2' }
     if (result.validationErrors.length === 0) {
       break
     }
     validationErrors.push(...result.validationErrors.map(error => ({ ...error, iteration })))
-    spec = result.spec
     iteration++
   } while (true);
 
