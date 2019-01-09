@@ -100,4 +100,10 @@ describe('scrub', () => {
       paths: {}
     })
   })
+
+  it('should not alter specification with no validation errors', async () => {
+    const document = validMinimalSpec
+    const result = await validateAndScrubExhaustive(document, { from: 'swagger_2' })
+    expect(result.spec).to.deep.equal(validMinimalSpec)
+  })
 })
