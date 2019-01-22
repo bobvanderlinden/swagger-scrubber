@@ -20,7 +20,7 @@
     "url": "https://github.com/bobvanderlinden/swagger-scrubber.git"
   },
   "dependencies": {
-    "api-spec-converter": "^2.7.23",
+    "api-spec-converter": "git+https://github.com/bobvanderlinden/api-spec-converter#pr-swagger-converter-1.5.0",
     "symbol": "^0.3.1",
     "yargs": "^12.0.5"
   },
